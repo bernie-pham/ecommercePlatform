@@ -1,9 +1,3 @@
-<style>
-red { color: red }
-yellow { color: yellow }
-green { color: green }
-</style>
-
 # **$\colorbox{purple}{Ecommerce Platform}$**
 #### Start on Thu 29 Dec 2022
 #### by <green>Bernie Pham</green>
