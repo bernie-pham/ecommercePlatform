@@ -15,9 +15,12 @@ type Querier interface {
 	AddCartItem(ctx context.Context, arg AddCartItemParams) (CartItem, error)
 	CreateDeal(ctx context.Context, arg CreateDealParams) (Deal, error)
 	CreateMerchant(ctx context.Context, arg CreateMerchantParams) (Merchant, error)
+	CreateMerchantOrder(ctx context.Context, arg CreateMerchantOrderParams) (int64, error)
 	CreateNotification(ctx context.Context, arg CreateNotificationParams) (Notification, error)
 	CreateOrder(ctx context.Context, arg CreateOrderParams) (int64, error)
 	CreateOrderItem(ctx context.Context, arg CreateOrderItemParams) (OrderItem, error)
+	CreateOrderItemV2(ctx context.Context, arg CreateOrderItemV2Params) error
+	CreateOrderV2(ctx context.Context, arg CreateOrderV2Params) (int64, error)
 	CreatePColour(ctx context.Context, colourName string) (ProductColour, error)
 	CreatePCriteria(ctx context.Context, criteria string) (ProductGeneralCriterium, error)
 	CreatePEntry(ctx context.Context, arg CreatePEntryParams) (ProductEntry, error)
@@ -45,6 +48,9 @@ type Querier interface {
 	GetDealByID(ctx context.Context, id int64) (Deal, error)
 	GetMerchant(ctx context.Context, id int64) (Merchant, error)
 	GetMerchantByCartID(ctx context.Context, id int64) (sql.NullInt32, error)
+	GetMerchantIDByPEntry(ctx context.Context, id int64) (sql.NullInt32, error)
+	GetMerchantIDbyPrID(ctx context.Context, id int64) (int32, error)
+	GetMerchantOrder(ctx context.Context, arg GetMerchantOrderParams) (MerchantOrder, error)
 	GetPEntry(ctx context.Context, id int64) (ProductEntry, error)
 	GetSession(ctx context.Context, id uuid.UUID) (GetSessionRow, error)
 	GetTodayBasePrice(ctx context.Context, productID int64) (int32, error)
@@ -57,6 +63,7 @@ type Querier interface {
 	ListMerchants(ctx context.Context, userID int64) ([]Merchant, error)
 	ListNotifications(ctx context.Context, recipientID int64) ([]Notification, error)
 	ListOrder(ctx context.Context, userID int64) ([]Order, error)
+	ListOrderItemsByMerchantOrderID(ctx context.Context, merchantOrderID int64) ([]ListOrderItemsByMerchantOrderIDRow, error)
 	ListPColours(ctx context.Context) ([]ProductColour, error)
 	ListPCriterias(ctx context.Context) ([]ProductGeneralCriterium, error)
 	ListPEntriesByPID(ctx context.Context, productID int64) ([]ProductEntry, error)
@@ -71,8 +78,11 @@ type Querier interface {
 	UpdateCartItem(ctx context.Context, arg UpdateCartItemParams) (CartItem, error)
 	UpdateEntryQuantity(ctx context.Context, arg UpdateEntryQuantityParams) error
 	UpdateMerchant(ctx context.Context, arg UpdateMerchantParams) (Merchant, error)
+	UpdateMerchantOrderStatus(ctx context.Context, arg UpdateMerchantOrderStatusParams) error
+	UpdateMerchantOrderTotalPrice(ctx context.Context, arg UpdateMerchantOrderTotalPriceParams) error
 	UpdateOrder(ctx context.Context, arg UpdateOrderParams) (Order, error)
 	UpdateOrderItemQuantity(ctx context.Context, arg UpdateOrderItemQuantityParams) (OrderItem, error)
+	UpdateOrderStatus(ctx context.Context, arg UpdateOrderStatusParams) error
 	UpdatePEntry(ctx context.Context, arg UpdatePEntryParams) (ProductEntry, error)
 	UpdatePPrice(ctx context.Context, arg UpdatePPriceParams) (ProductPricing, error)
 	UpdateProduct(ctx context.Context, arg UpdateProductParams) (Product, error)

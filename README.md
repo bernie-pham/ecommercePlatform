@@ -17,9 +17,12 @@
 
 #### This project use sqlc to generate type-safe code from SQL [SQLC](https://github.com/kyleconroy/sqlc)
 
-#### This project use sqlc to generate type-safe code from SQL [Migrate](https://github.com/golang-migrate/migrate)
+#### This project use go migrate to manage database version [Migrate](https://github.com/golang-migrate/migrate)
 
 #### This project use Paseto to generate session token [Paseto](github.com/o1egl/paseto)
+
+#### This project use Asynq to manage backgound jobs [Asynq](https://github.com/hibiken/asynq)
+##### Also use asynmon to monitor background job which distributed in Redis [Asynmon](https://github.com/hibiken/asynq)
 
 ## Project Building steps
 - building the structure of project directory
@@ -41,11 +44,12 @@ Init sql.yml
     - Create user: ✅
     - Forgot/Reset Password: ✅
     - Update User (optional parameters): ✅
+    - Verify new registered User: ✅
 - Setup Session management for login feature: ✅
-- Research how to use Refresh Token securely
-- Implement Oauth 2.0
-- Implement Cache with redis and heruko
-- Implement Product Criteria:
+- Implement 
+- Implement Oauth 2.0: ❌
+- Implement Caching: ❌
+- Implement CRUD for Product Criteria:
     - tags ✅
     - size ✅
     - colour ✅
@@ -55,6 +59,7 @@ Init sql.yml
     - Adding ✅
     - Edit quantity ✅
     - Remove ✅
-- Implement Order
-    - 
-- Implement caching
+- Implement Order Management:
+    - Imlement Order Management for merchant and user workflow: ✅
+    - Implement gRPC for OMS (Order Software Management) integration: ✅
+- Implement backgrouund job for send mail, notify.

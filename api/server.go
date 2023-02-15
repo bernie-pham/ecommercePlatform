@@ -66,9 +66,11 @@ func (server *Server) setupRouter() {
 
 	authRoutes.GET("/notifications", server.ListNofications)
 
-	merchantRoutes := router.Group("/")
+	merchantRoutes := router.Group("/merchant")
 	merchantRoutes.Use(authMiddleware(server.tokenMaker))
 	merchantRoutes.Use(merchantAuthMiddleware())
+
+	merchantRoutes.GET("/orders/:id", server.GetMerchantOrderDetails)
 
 	// router.POST("/merchants/", server.loginUserForThirdParty)
 	// router.POST("/token/refresh_token", server.refreshToken)

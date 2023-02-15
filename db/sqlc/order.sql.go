@@ -28,6 +28,39 @@ func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) (int64
 	return id, err
 }
 
+const createOrderV2 = `-- name: CreateOrderV2 :one
+INSERT INTO orders (
+    user_id, 
+    base_price, 
+    discount_price,
+    deal_id)
+VALUES (
+    $1, 
+    $2, 
+    $3, 
+    $4
+) RETURNING id
+`
+
+type CreateOrderV2Params struct {
+	UserID        int64         `json:"user_id"`
+	BasePrice     float32       `json:"base_price"`
+	DiscountPrice float32       `json:"discount_price"`
+	DealID        sql.NullInt64 `json:"deal_id"`
+}
+
+func (q *Queries) CreateOrderV2(ctx context.Context, arg CreateOrderV2Params) (int64, error) {
+	row := q.db.QueryRowContext(ctx, createOrderV2,
+		arg.UserID,
+		arg.BasePrice,
+		arg.DiscountPrice,
+		arg.DealID,
+	)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
+}
+
 const getCurrentOrder = `-- name: GetCurrentOrder :one
 SELECT id, user_id, status, created_at, deal_id, base_price, discount_price
 FROM orders
@@ -125,4 +158,21 @@ func (q *Queries) UpdateOrder(ctx context.Context, arg UpdateOrderParams) (Order
 		&i.DiscountPrice,
 	)
 	return i, err
+}
+
+const updateOrderStatus = `-- name: UpdateOrderStatus :exec
+UPDATE orders 
+SET 
+    status = $1
+WHERE id = $2
+`
+
+type UpdateOrderStatusParams struct {
+	Status OrderStatus `json:"status"`
+	ID     int64       `json:"id"`
+}
+
+func (q *Queries) UpdateOrderStatus(ctx context.Context, arg UpdateOrderStatusParams) error {
+	_, err := q.db.ExecContext(ctx, updateOrderStatus, arg.Status, arg.ID)
+	return err
 }

@@ -2,9 +2,12 @@ package api
 
 import (
 	"database/sql"
+	"errors"
 	"net/http"
+	"time"
 
 	db "github.com/bernie-pham/ecommercePlatform/db/sqlc"
+	"github.com/bernie-pham/ecommercePlatform/token"
 	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog/log"
 )
@@ -79,4 +82,65 @@ func (server *Server) UpdateMerchant(ctx *gin.Context) {
 		return
 	}
 	ctx.JSON(http.StatusOK, merchant)
+}
+
+type getMerchantOrderRequest struct {
+	MerchantOrderID int64 `uri:"id"`
+}
+
+type merchantOrderDetails struct {
+	OrderTotalPrice float32                                 `json:"order_total_price"`
+	Status          string                                  `json:"status"`
+	Created_At      time.Time                               `json:"created_at"`
+	Updated_At      time.Time                               `json:"updated_at"`
+	OrderItems      []db.ListOrderItemsByMerchantOrderIDRow `json:"order_items"`
+}
+
+func (server *Server) GetMerchantOrderDetails(ctx *gin.Context) {
+	session_payload, ok := ctx.Get(authorizationHeaderKey)
+	if !ok {
+		err := errors.New("invalid access token")
+		log.Error().
+			Err(err).
+			Msg("failed to get auth payload from session")
+		return
+	}
+	authPayload := session_payload.(*token.Payload)
+	var req getMerchantOrderRequest
+	if err := ctx.ShouldBindUri(&req); err != nil {
+		log.Error().
+			Err(err).
+			Msg("Bad Request: failed to get arg from request")
+		ctx.JSON(http.StatusBadRequest, errorResponse(ErrBadRequestParameter))
+		return
+	}
+	arg := db.GetMerchantOrderParams{
+		ID:         req.MerchantOrderID,
+		MerchantID: int64(authPayload.UserID),
+	}
+	merchantOrder, err := server.store.GetMerchantOrder(ctx, arg)
+	if err != nil && err != sql.ErrNoRows {
+		log.Error().
+			Err(err).
+			Msg("failed to get merchant order")
+		ctx.JSON(http.StatusInternalServerError, errorResponse(ErrInteralErrServer))
+		return
+	}
+	orderItems, err := server.store.
+		ListOrderItemsByMerchantOrderID(ctx, merchantOrder.ID)
+	if err != nil {
+		log.Error().
+			Err(err).
+			Msg("failed to get merchant order item")
+		ctx.JSON(http.StatusInternalServerError, errorResponse(ErrInteralErrServer))
+		return
+	}
+	rsp := merchantOrderDetails{
+		OrderTotalPrice: merchantOrder.TotalPrice,
+		Status:          string(merchantOrder.OrderStatus),
+		Created_At:      merchantOrder.CreatedAt,
+		Updated_At:      merchantOrder.UpdatedAt,
+		OrderItems:      orderItems,
+	}
+	ctx.JSON(http.StatusOK, rsp)
 }

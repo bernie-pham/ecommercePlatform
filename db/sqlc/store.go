@@ -10,6 +10,7 @@ type Store interface {
 	Querier
 	ResetPasswdTX(ctx context.Context, arg ResetPasswdTXParams) error
 	CreateOrderTX(ctx context.Context, arg CreateOrderTXParams) error
+	CreateOrderTX_v2(ctx context.Context, arg CreateOrderTXParams) error
 }
 
 type SQLStore struct {

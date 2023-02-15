@@ -39,6 +39,19 @@ func (q *Queries) CreateProduct(ctx context.Context, arg CreateProductParams) (P
 	return i, err
 }
 
+const getMerchantIDbyPrID = `-- name: GetMerchantIDbyPrID :one
+SELECT merchant_id
+FROM products
+WHERE id = $1
+`
+
+func (q *Queries) GetMerchantIDbyPrID(ctx context.Context, id int64) (int32, error) {
+	row := q.db.QueryRowContext(ctx, getMerchantIDbyPrID, id)
+	var merchant_id int32
+	err := row.Scan(&merchant_id)
+	return merchant_id, err
+}
+
 const listAllProducts = `-- name: ListAllProducts :many
 SELECT id, name, merchant_id, status, created_at
 FROM products

@@ -16,9 +16,14 @@ import (
 type OrderStatus string
 
 const (
-	OrderStatusOpen     OrderStatus = "open"
-	OrderStatusArchived OrderStatus = "archived"
-	OrderStatusCanceled OrderStatus = "canceled"
+	OrderStatusOpen       OrderStatus = "open"
+	OrderStatusArchived   OrderStatus = "archived"
+	OrderStatusCanceled   OrderStatus = "canceled"
+	OrderStatusPrepared   OrderStatus = "prepared"
+	OrderStatusPicked     OrderStatus = "picked"
+	OrderStatusOnDelivery OrderStatus = "on_delivery"
+	OrderStatusDeliveried OrderStatus = "deliveried"
+	OrderStatusApproved   OrderStatus = "approved"
 )
 
 func (e *OrderStatus) Scan(src interface{}) error {
@@ -136,6 +141,16 @@ type Merchant struct {
 	IsActive     bool      `json:"is_active"`
 }
 
+type MerchantOrder struct {
+	ID          int64       `json:"id"`
+	MerchantID  int64       `json:"merchant_id"`
+	TotalPrice  float32     `json:"total_price"`
+	OrderStatus OrderStatus `json:"order_status"`
+	CreatedAt   time.Time   `json:"created_at"`
+	OrderID     int64       `json:"order_id"`
+	UpdatedAt   time.Time   `json:"updated_at"`
+}
+
 type Notification struct {
 	ID          int64     `json:"id"`
 	Message     string    `json:"message"`
@@ -155,10 +170,11 @@ type Order struct {
 }
 
 type OrderItem struct {
-	OrderID        int64   `json:"order_id"`
-	ProductEntryID int64   `json:"product_entry_id"`
-	Quantity       int32   `json:"quantity"`
-	TotalPrice     float32 `json:"total_price"`
+	OrderID         int64   `json:"order_id"`
+	ProductEntryID  int64   `json:"product_entry_id"`
+	Quantity        int32   `json:"quantity"`
+	TotalPrice      float32 `json:"total_price"`
+	MerchantOrderID int64   `json:"merchant_order_id"`
 }
 
 type Product struct {

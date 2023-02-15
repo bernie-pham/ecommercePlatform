@@ -44,3 +44,9 @@ SET
     quantity = quantity - $1
 WHERE
     id = $2;
+
+-- name: GetMerchantIDByPEntry :one
+SELECT p.merchant_id
+FROM product_entry pe 
+LEFT JOIN products p ON pe.product_id = p.id
+WHERE pe.id = $1;

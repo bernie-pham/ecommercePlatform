@@ -30,18 +30,8 @@ func (server *Server) CreateOrder(ctx *gin.Context) {
 		return
 	}
 	auth_payload := session_value.(*token.Payload)
-	// user select item in cart and then process to order.
-	// body, err := ioutil.ReadAll(ctx.Request.Body)
-	// if err != nil {
-	// 	ctx.JSON(http.StatusInternalServerError, errorResponse(ErrInteralErrServer))
-	// 	return
-	// }
+
 	var req CreateOrderRequest
-	// err = json.Unmarshal(body, &req)
-	// if err != nil {
-	// 	ctx.JSON(http.StatusInternalServerError, errorResponse(ErrInteralErrServer))
-	// 	return
-	// }
 
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		log.Error().
@@ -53,7 +43,6 @@ func (server *Server) CreateOrder(ctx *gin.Context) {
 	// checking these item in list are avaialble or not?
 	// checking price, sale, quantity
 	var cartItems []db.CartItem
-	var tasks []async.NotificationPayload
 	for _, id := range req.Items {
 		item, err := server.store.GetCartItemByID(ctx, int64(id))
 		if err != nil {
@@ -70,30 +59,29 @@ func (server *Server) CreateOrder(ctx *gin.Context) {
 			ctx.JSON(http.StatusInternalServerError, errorResponse(ErrInteralErrServer))
 			return
 		}
-		merchant_id, err := server.store.GetMerchantByCartID(ctx, int64(id))
-		if err != nil {
-			log.Error().
-				Err(err).
-				Msg("failed to get merchant id by cart id")
-			ctx.JSON(http.StatusInternalServerError, errorResponse(ErrInteralErrServer))
-			return
-		}
-		task := async.NotificationPayload{
-			RecipientID: int(merchant_id.Int32),
-			Title:       "Ecommerce System: You got an order",
-			Msg: fmt.Sprintf(
-				"You got an order with Product Entry - %v, Quantity: %v",
-				item.ProductEntryID, item.Quantity),
-		}
-		tasks = append(tasks, task)
 		cartItems = append(cartItems, item)
 	}
 	arg := db.CreateOrderTXParams{
 		UserID: auth_payload.UserID,
 		Items:  cartItems,
 		DealID: req.DealID,
+		AfterCreateFunc: func(merchantID_OrderID_map map[int32]int64) error {
+			for merchantID, merchant_order_id := range merchantID_OrderID_map {
+				arg := async.NotificationPayload{
+					RecipientID: int(merchantID),
+					Title:       "Ecommerce System: You got an order",
+					Msg: fmt.Sprintf(
+						"You got an order with ID: %v", merchant_order_id),
+				}
+				err := server.taskDistributor.DistributeTaskNotification(ctx, &arg)
+				if err != nil {
+					return err
+				}
+			}
+			return nil
+		},
 	}
-	err := server.store.CreateOrderTX(ctx, arg)
+	err := server.store.CreateOrd	erTX_v2(ctx, arg)
 	if err != nil {
 		log.Error().
 			Err(err).
@@ -101,10 +89,4 @@ func (server *Server) CreateOrder(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(ErrInteralErrServer))
 		return
 	}
-	// after Create Order Transaction success, notify merchant for prepare stock for delivery
-	// execute task
-	for _, task := range tasks {
-		server.taskDistributor.DistributeTaskNotification(ctx, &task)
-	}
-
 }

@@ -4,7 +4,8 @@ CREATE TABLE "merchant_order" (
     "total_price" float4 NOT NULL,
     "order_status" order_status NOT NULL DEFAULT 'open',
     "created_at" timestamptz NOT NULL DEFAULT (now()),
-    "order_id" bigint NOT NULL 
+    "order_id" bigint NOT NULL,
+    "updated_at" timestamptz NOT NULL DEFAULT (now())
 );
 
 ALTER TABLE "order_items" ADD FOREIGN KEY ("merchant_order_id") REFERENCES "merchant_order" ("id");

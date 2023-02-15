@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package pb;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/bernie-pham/ecommercePlatform/pb";
+
+enum OrderStatus {
+    OPEN = 1;
+    PREPARED = 2;
+    CANCELED = 3;
+    PICKED = 4;
+    ON_DELIVERY = 5;
+    DELIVERIED = 6;
+    APPROVED = 7;
+}
+
+message MerchantOrder {
+    int64 id = 1;
+    int64 order_id = 2;
+    OrderStatus status = 3;
+    int64 merchant_id = 4;
+    float total_price = 5;
+    google.protobuf.Timestamp created_at = 6;
+    google.protobuf.Timestamp updated_at = 7;
+    
+}

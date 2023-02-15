@@ -58,6 +58,20 @@ func (q *Queries) CreatePEntry(ctx context.Context, arg CreatePEntryParams) (Pro
 	return i, err
 }
 
+const getMerchantIDByPEntry = `-- name: GetMerchantIDByPEntry :one
+SELECT p.merchant_id
+FROM product_entry pe 
+LEFT JOIN products p ON pe.product_id = p.id
+WHERE pe.id = $1
+`
+
+func (q *Queries) GetMerchantIDByPEntry(ctx context.Context, id int64) (sql.NullInt32, error) {
+	row := q.db.QueryRowContext(ctx, getMerchantIDByPEntry, id)
+	var merchant_id sql.NullInt32
+	err := row.Scan(&merchant_id)
+	return merchant_id, err
+}
+
 const getPEntry = `-- name: GetPEntry :one
 SELECT id, product_id, colour_id, size_id, general_criteria_id, quantity, deal_id, is_active, modified_at, created_at
 FROM product_entry

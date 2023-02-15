@@ -17,7 +17,7 @@ INSERT INTO order_items (
     total_price
 )
 VALUES ($1, $2, $3, $4)
-RETURNING order_id, product_entry_id, quantity, total_price
+RETURNING order_id, product_entry_id, quantity, total_price, merchant_order_id
 `
 
 type CreateOrderItemParams struct {
@@ -40,8 +40,39 @@ func (q *Queries) CreateOrderItem(ctx context.Context, arg CreateOrderItemParams
 		&i.ProductEntryID,
 		&i.Quantity,
 		&i.TotalPrice,
+		&i.MerchantOrderID,
 	)
 	return i, err
+}
+
+const createOrderItemV2 = `-- name: CreateOrderItemV2 :exec
+INSERT INTO order_items (
+    order_id,
+    product_entry_id,
+    quantity,
+    total_price,
+    merchant_order_id
+)
+VALUES ($1, $2, $3, $4, $5)
+`
+
+type CreateOrderItemV2Params struct {
+	OrderID         int64   `json:"order_id"`
+	ProductEntryID  int64   `json:"product_entry_id"`
+	Quantity        int32   `json:"quantity"`
+	TotalPrice      float32 `json:"total_price"`
+	MerchantOrderID int64   `json:"merchant_order_id"`
+}
+
+func (q *Queries) CreateOrderItemV2(ctx context.Context, arg CreateOrderItemV2Params) error {
+	_, err := q.db.ExecContext(ctx, createOrderItemV2,
+		arg.OrderID,
+		arg.ProductEntryID,
+		arg.Quantity,
+		arg.TotalPrice,
+		arg.MerchantOrderID,
+	)
+	return err
 }
 
 const deleteOrderItem = `-- name: DeleteOrderItem :exec
@@ -59,13 +90,48 @@ func (q *Queries) DeleteOrderItem(ctx context.Context, arg DeleteOrderItemParams
 	return err
 }
 
+const listOrderItemsByMerchantOrderID = `-- name: ListOrderItemsByMerchantOrderID :many
+SELECT product_entry_id, quantity, total_price
+FROM order_items
+WHERE merchant_order_id = $1
+`
+
+type ListOrderItemsByMerchantOrderIDRow struct {
+	ProductEntryID int64   `json:"product_entry_id"`
+	Quantity       int32   `json:"quantity"`
+	TotalPrice     float32 `json:"total_price"`
+}
+
+func (q *Queries) ListOrderItemsByMerchantOrderID(ctx context.Context, merchantOrderID int64) ([]ListOrderItemsByMerchantOrderIDRow, error) {
+	rows, err := q.db.QueryContext(ctx, listOrderItemsByMerchantOrderID, merchantOrderID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListOrderItemsByMerchantOrderIDRow{}
+	for rows.Next() {
+		var i ListOrderItemsByMerchantOrderIDRow
+		if err := rows.Scan(&i.ProductEntryID, &i.Quantity, &i.TotalPrice); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const updateOrderItemQuantity = `-- name: UpdateOrderItemQuantity :one
 UPDATE order_items
 SET 
     quantity = $1
 WHERE 
     order_id = $2 AND product_entry_id = $3
-RETURNING order_id, product_entry_id, quantity, total_price
+RETURNING order_id, product_entry_id, quantity, total_price, merchant_order_id
 `
 
 type UpdateOrderItemQuantityParams struct {
@@ -82,6 +148,7 @@ func (q *Queries) UpdateOrderItemQuantity(ctx context.Context, arg UpdateOrderIt
 		&i.ProductEntryID,
 		&i.Quantity,
 		&i.TotalPrice,
+		&i.MerchantOrderID,
 	)
 	return i, err
 }

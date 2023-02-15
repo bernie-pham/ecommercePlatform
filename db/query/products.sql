@@ -30,6 +30,11 @@ WHERE id in (
     WHERE products_id = $1
 );
 
+-- name: GetMerchantIDbyPrID :one
+SELECT merchant_id
+FROM products
+WHERE id = $1;
+
 
 -- name: ListAllProducts :many
 SELECT *
