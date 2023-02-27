@@ -1,4 +1,4 @@
-.PHONY: server, createdb, migrateup, migratedown, sqlc, asynqmon
+.PHONY: server, createdb, migrateup, migratedown, sqlc, asynqmon, protogen
 
 server:
 	go run main.go
@@ -18,3 +18,9 @@ sqlc:
 asynqmon: 
 	docker run --rm --name asynqmon \
     	-p 8000:8080 hibiken/asynqmon --redis-addr=host.docker.internal:6379
+
+protogen:
+	rm -f pb/*.go
+	protoc --proto_path=proto --go_out=pb  --go_opt=paths=source_relative \
+	--go-grpc_out=pb --go-grpc_opt=paths=source_relative \
+	proto/*.proto 

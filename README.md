@@ -46,7 +46,12 @@ Init sql.yml
     - Update User (optional parameters): ✅
     - Verify new registered User: ✅
 - Setup Session management for login feature: ✅
-- Implement 
+- Manage session using Redis: ❌
+    - Store session in server into Redis ✅
+    - Store only session ID on client-side ✅
+    - Refresh token automatically when it is expired (implement Refresh Token Rotation) ❌
+    - Remove session in redis if user logging out (Token Revocation) ✅
+    - Session should be modified if any update on user, such as privilege, name, ... ❌
 - Implement Oauth 2.0: ❌
 - Implement Caching: ❌
 - Implement CRUD for Product Criteria:
@@ -62,4 +67,5 @@ Init sql.yml
 - Implement Order Management:
     - Imlement Order Management for merchant and user workflow: ✅
     - Implement gRPC for OMS (Order Software Management) integration: ✅
-- Implement backgrouund job for send mail, notify.
+- Implement backgrouund job for send mail, notify ✅
+- learning ReactJS for implementing the front end part

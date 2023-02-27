@@ -18,6 +18,7 @@ type Config struct {
 	RedisAddr       string        `mapstructure:"REDIS_ADDRESS"`
 	MailSender      string        `mapstructure:"EMAIL_SENDER"`
 	MailTempltePath string        `mapstructure:"EMAIL_TEMPLATE_PATH"`
+	GRPCServerAddr  string        `mapstructure:"GRPC_SERVER_ADDR"`
 }
 
 func LoadConfig() (Config, error) {

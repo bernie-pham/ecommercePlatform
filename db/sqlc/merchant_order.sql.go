@@ -65,20 +65,32 @@ func (q *Queries) GetMerchantOrder(ctx context.Context, arg GetMerchantOrderPara
 	return i, err
 }
 
-const updateMerchantOrderStatus = `-- name: UpdateMerchantOrderStatus :exec
+const updateMerchantOrderStatus = `-- name: UpdateMerchantOrderStatus :one
 UPDATE merchant_order
 SET order_status = $1
-WHERE id = $2
+WHERE id = $2 AND merchant_id = $3
+RETURNING id, merchant_id, total_price, order_status, created_at, order_id, updated_at
 `
 
 type UpdateMerchantOrderStatusParams struct {
 	OrderStatus OrderStatus `json:"order_status"`
 	ID          int64       `json:"id"`
+	MerchantID  int64       `json:"merchant_id"`
 }
 
-func (q *Queries) UpdateMerchantOrderStatus(ctx context.Context, arg UpdateMerchantOrderStatusParams) error {
-	_, err := q.db.ExecContext(ctx, updateMerchantOrderStatus, arg.OrderStatus, arg.ID)
-	return err
+func (q *Queries) UpdateMerchantOrderStatus(ctx context.Context, arg UpdateMerchantOrderStatusParams) (MerchantOrder, error) {
+	row := q.db.QueryRowContext(ctx, updateMerchantOrderStatus, arg.OrderStatus, arg.ID, arg.MerchantID)
+	var i MerchantOrder
+	err := row.Scan(
+		&i.ID,
+		&i.MerchantID,
+		&i.TotalPrice,
+		&i.OrderStatus,
+		&i.CreatedAt,
+		&i.OrderID,
+		&i.UpdatedAt,
+	)
+	return i, err
 }
 
 const updateMerchantOrderTotalPrice = `-- name: UpdateMerchantOrderTotalPrice :exec

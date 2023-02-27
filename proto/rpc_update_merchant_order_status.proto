@@ -2,12 +2,12 @@ syntax = "proto3";
 
 package pb;
 
-import "merchant_order.proto";
+import "rpc_merchant_order.proto";
 
 option go_package = "github.com/bernie-pham/ecommercePlatform/pb";
 
 message UpdateMerchantOrderReq {
-    int64 merchant_order = 1;
+    int64 merchant_order_id = 1;
     OrderStatus status = 2;
 }
 

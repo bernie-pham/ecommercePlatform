@@ -81,7 +81,7 @@ func (server *Server) CreateOrder(ctx *gin.Context) {
 			return nil
 		},
 	}
-	err := server.store.CreateOrd	erTX_v2(ctx, arg)
+	err := server.store.CreateOrderTX_v2(ctx, arg)
 	if err != nil {
 		log.Error().
 			Err(err).

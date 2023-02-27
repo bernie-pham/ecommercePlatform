@@ -7,8 +7,13 @@ import (
 	"github.com/google/uuid"
 )
 
-var ErrExpiredToken = errors.New("token has expired")
-var ErrInvalidToken = errors.New("token invalid")
+type TypeKey string
+
+var (
+	ErrExpiredToken = errors.New("token has expired")
+	ErrInvalidToken = errors.New("token invalid")
+	AuthPayloadKey  = TypeKey("auth_payload")
+)
 
 type Payload struct {
 	ID             uuid.UUID

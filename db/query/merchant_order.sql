@@ -8,10 +8,11 @@ INSERT INTO merchant_order (
 VALUES ($1, $2, $3, $4)
 RETURNING id;
 
--- name: UpdateMerchantOrderStatus :exec
+-- name: UpdateMerchantOrderStatus :one
 UPDATE merchant_order
 SET order_status = $1
-WHERE id = $2;
+WHERE id = $2 AND merchant_id = $3
+RETURNING *;
 
 -- name: UpdateMerchantOrderTotalPrice :exec
 UPDATE merchant_order

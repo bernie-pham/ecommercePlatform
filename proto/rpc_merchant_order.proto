@@ -7,13 +7,13 @@ import "google/protobuf/timestamp.proto";
 option go_package = "github.com/bernie-pham/ecommercePlatform/pb";
 
 enum OrderStatus {
-    OPEN = 1;
+    OPEN = 0;
+    APPROVED = 1;
     PREPARED = 2;
     CANCELED = 3;
     PICKED = 4;
     ON_DELIVERY = 5;
     DELIVERIED = 6;
-    APPROVED = 7;
 }
 
 message MerchantOrder {

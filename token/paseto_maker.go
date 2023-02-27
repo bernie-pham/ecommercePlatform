@@ -37,6 +37,7 @@ func (maker *PasetoTokenMaker) CreateToken(duration time.Duration, email string,
 	return token, payload, nil
 }
 
+// VerifyToken returns pointered auth payload, token type and error if any
 func (maker *PasetoTokenMaker) VerifyToken(token string) (*Payload, string, error) {
 	payload := &Payload{}
 	var footer string
