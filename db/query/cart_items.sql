@@ -6,19 +6,34 @@ INSERT INTO cart_item (
 )
 VALUES ($1, $2, $3) RETURNING *;
 
--- name: UpdateCartItem :one
+-- name: AddDupCartItem :one
 UPDATE cart_item
 SET
     quantity = quantity + $1,
     modified_at = $2
 WHERE 
-    id = $3
+    id = $3 AND
+    user_id = $4
 RETURNING *;
 
+-- name: UpdateCartItem :exec
+UPDATE cart_item
+SET
+    quantity = $1,
+    modified_at = now()
+WHERE 
+    id = $2 AND
+    user_id = $3;
+
+-- name: GetPEQtyByID :one
+SELECT pde.quantity
+FROM cart_item c
+LEFT JOIN product_entry pde ON c.product_entry_id = pde.id 
+WHERE c.id = $1;
 
 -- name: DeleteCartItemByID :exec
 DELETE FROM cart_item
-WHERE id = $1;
+WHERE id = $1 AND user_id = $2;
 
 -- name: DeleteAllCartItemByUserID :exec
 DELETE FROM cart_item

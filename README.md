@@ -69,3 +69,4 @@ Init sql.yml
     - Implement gRPC for OMS (Order Software Management) integration: ✅
 - Implement backgrouund job for send mail, notify ✅
 - learning ReactJS for implementing the front end part
+- elasticsearch: docker pull docker.elastic.co/elasticsearch/elasticsearch:7.5.2

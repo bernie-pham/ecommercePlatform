@@ -38,4 +38,18 @@ WHERE id = $1;
 
 -- name: ListAllProducts :many
 SELECT *
-FROM products;
+FROM products
+LIMIT $1
+OFFSET $2;
+
+
+-- name: ListProductID :many
+SELECT id 
+FROM products
+LIMIT $1
+OFFSET $2;
+
+-- name: GetProductNameByID :one
+SELECT name 
+FROM products
+WHERE id = $1;

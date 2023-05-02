@@ -33,3 +33,18 @@ WHERE id in (
     WHERE product_tags_id = $1
 );
 
+-- name: ListTagID :many
+SELECT id
+FROM product_tags
+LIMIT $1
+OFFSET $2;
+
+-- name: ListProductIDbyTagID :many
+SELECT products_id
+FROM product_tags_products
+WHERE product_tags_id = $1;
+
+-- name: GetTagNameByID :one
+SELECT name 
+FROM product_tags
+WHERE id = $1;

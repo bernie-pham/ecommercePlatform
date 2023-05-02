@@ -19,6 +19,10 @@ type Config struct {
 	MailSender      string        `mapstructure:"EMAIL_SENDER"`
 	MailTempltePath string        `mapstructure:"EMAIL_TEMPLATE_PATH"`
 	GRPCServerAddr  string        `mapstructure:"GRPC_SERVER_ADDR"`
+	StaticRoot      string        `mapstructure:"ASSET_ROOT"`
+	ElasticAddr     string        `mapstructure:"ELASTIC_ADDRESS"`
+	ElasticUsername string        `mapstructure:"ELASTIC_USERNAME"`
+	ElasticPass     string        `mapstructure:"ELASTIC_PASSWORD"`
 }
 
 func LoadConfig() (Config, error) {

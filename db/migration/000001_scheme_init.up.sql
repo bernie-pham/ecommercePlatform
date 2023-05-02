@@ -9,16 +9,6 @@ CREATE TABLE "users" (
   "access_level" int NOT NULL DEFAULT (1)
 );
 
-CREATE TABLE "sessions" (
-  "id" uuid PRIMARY KEY,
-  "email" varchar NOT NULL,
-  "refresh_token" varchar NOT NULL,
-  "user_agent" varchar NOT NULL,
-  "client_ip" varchar NOT NULL,
-  "is_blocked" boolean NOT NULL DEFAULT false,
-  "expires_at" timestamptz NOT NULL DEFAULT (now()),
-  "created_at" timestamptz NOT NULL DEFAULT (now())
-);
 
 CREATE TABLE "verifications" (
   "id" uuid PRIMARY KEY,
@@ -61,17 +51,18 @@ CREATE TYPE "order_status" AS ENUM (
 );
 
 CREATE TABLE "products" (
-  "id" bigserial PRIMARY KEY,
+  "id" varchar PRIMARY KEY,
   "name" varchar NOT NULL,
-  "merchant_id" int NOT NULL,
+  "merchant_id" bigint NOT NULL,
   "status" product_status,
-  "created_at" timestamptz NOT NULL DEFAULT (now())
+  "created_at" timestamptz NOT NULL DEFAULT (now()),
+  "img_path" varchar NOT NULL
 );
 
 CREATE TABLE "product_pricing" (
   "id" bigserial PRIMARY KEY,
-  "product_id" bigint NOT NULL,
-  "base_price" int NOT NULL,
+  "product_id" varchar NOT NULL,
+  "base_price" float4 NOT NULL,
   "start_date" timestamptz NOT NULL DEFAULT (now()),
   "end_date" timestamptz NOT NULL DEFAULT (now()),
   "is_active" bool NOT NULL DEFAULT true,
@@ -79,7 +70,7 @@ CREATE TABLE "product_pricing" (
 );
 
 CREATE TABLE "product_tags" (
-  "id" bigserial PRIMARY KEY,
+  "id" varchar PRIMARY KEY,
   "name" varchar NOT NULL
 );
 
@@ -100,7 +91,7 @@ CREATE TABLE "product_general_criteria" (
 
 CREATE TABLE "product_entry" (
   "id" bigserial PRIMARY KEY,
-  "product_id" bigint NOT NULL,
+  "product_id" varchar NOT NULL,
   "colour_id" bigint,
   "size_id" bigint,
   "general_criteria_id" bigint,
@@ -112,8 +103,8 @@ CREATE TABLE "product_entry" (
 );
 
 CREATE TABLE "product_tags_products" (
-  "product_tags_id" bigint,
-  "products_id" bigint,
+  "product_tags_id" varchar,
+  "products_id" varchar,
   PRIMARY KEY ("product_tags_id", "products_id")
 );
 
@@ -138,24 +129,53 @@ CREATE TABLE "orders" (
 CREATE TABLE "deals" (
   "id" bigserial PRIMARY KEY,
   "name" varchar NOT NULL,
-  "code" varchar,
+  "code" varchar NOT NULL,
   "start_date" timestamptz NOT NULL DEFAULT (now()),
   "end_date" timestamptz NOT NULL DEFAULT (now()),
   "type" varchar NOT NULL,
   "discount_rate" float4 NOT NULL,
   "merchant_id" bigint NOT NULL,
-  "deal_limit" int
+  "deal_limit" float4
 );
 
-CREATE UNIQUE INDEX idx_product_tags_products ON "product_tags_products" ("product_tags_id", "products_id");
+CREATE TABLE "merchant_order" (
+    "id" bigserial PRIMARY KEY,
+    "merchant_id" bigint NOT NULL,
+    "total_price" float4 NOT NULL,
+    "order_status" order_status NOT NULL DEFAULT 'open',
+    "created_at" timestamptz NOT NULL DEFAULT (now()),
+    "order_id" bigint NOT NULL,
+    "updated_at" timestamptz NOT NULL DEFAULT (now())
+);
+
+CREATE TABLE "notifications" (
+    "id" bigserial PRIMARY KEY,
+    "message" varchar NOT NULL,
+    "recipient_id" bigint NOT NULL,
+    "created_at" timestamptz NOT NULL DEFAULT (now()),
+    "title" varchar NOT NULL
+);
+
+
+CREATE TABLE "cart_item" (
+  "id" bigserial PRIMARY KEY,
+  "product_entry_id" bigserial NOT NULL,
+  "quantity" int NOT NULL,
+  "created_at" timestamptz NOT NULL DEFAULT (now()),
+  "user_id" bigserial NOT NULL,
+  "modified_at" timestamptz NOT NULL DEFAULT (now())
+);
+
+
 
 CREATE UNIQUE INDEX idx_users_email ON "users" ("email");
+
+CREATE UNIQUE INDEX idx_deal_code ON "deals" ("code");
 
 ALTER TABLE "merchants" ADD FOREIGN KEY ("country_code") REFERENCES "countries" ("code");
 
 ALTER TABLE "merchants" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id");
 
-ALTER TABLE "sessions" ADD FOREIGN KEY ("email") REFERENCES "users" ("email");
 
 ALTER TABLE "verifications" ADD FOREIGN KEY ("email") REFERENCES "users" ("email");
 
@@ -185,4 +205,18 @@ ALTER TABLE "product_tags_products" ADD FOREIGN KEY ("product_tags_id") REFERENC
 
 ALTER TABLE "product_tags_products" ADD FOREIGN KEY ("products_id") REFERENCES "products" ("id");
 
-ALTER TABLE "deals" ADD FOREIGN KEY ("merchant_id") REFERENCES "merchants" ("id");
+-- ALTER TABLE "deals" ADD FOREIGN KEY ("merchant_id") REFERENCES "merchants" ("id");
+
+ALTER TABLE "notifications" ADD FOREIGN KEY ("recipient_id") REFERENCES "users" ("id");
+
+ALTER TABLE "order_items" ADD FOREIGN KEY ("merchant_order_id") REFERENCES "merchant_order" ("id");
+
+ALTER TABLE "merchant_order" ADD FOREIGN KEY ("order_id") REFERENCES "orders" ("id");
+
+ALTER TABLE "merchant_order" ADD FOREIGN KEY ("merchant_id") REFERENCES "merchants" ("id");
+
+CREATE UNIQUE INDEX idx_product_tags_products ON "product_tags_products" ("product_tags_id", "products_id");
+
+ALTER TABLE "cart_item" ADD FOREIGN KEY ("product_entry_id") REFERENCES "product_entry" ("id");
+
+ALTER TABLE "cart_item" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id");

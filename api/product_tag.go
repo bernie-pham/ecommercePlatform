@@ -39,8 +39,8 @@ func (server *Server) ListTags(ctx *gin.Context) {
 }
 
 type CreateProtagRequest struct {
-	ProductID int `json:"product_id"`
-	TagID     int `json:"tag_id"`
+	ProductID string `json:"product_id"`
+	TagID     string `json:"tag_id"`
 }
 
 func (server *Server) CreateProtag(ctx *gin.Context) {
@@ -50,8 +50,8 @@ func (server *Server) CreateProtag(ctx *gin.Context) {
 		return
 	}
 	arg := db.CreateProTagParams{
-		ProductTagsID: int64(req.ProductID),
-		ProductsID:    int64(req.ProductID),
+		ProductTagsID: req.ProductID,
+		ProductsID:    req.ProductID,
 	}
 
 	Protag, err := server.store.CreateProTag(ctx, arg)
@@ -74,7 +74,7 @@ func (server *Server) ListProtags(ctx *gin.Context) {
 }
 
 type ListProductWithTagRequest struct {
-	TagID int `uri:"id" binding:"required,min=1"`
+	TagID string `uri:"id" binding:"required,min=1"`
 }
 
 func (server *Server) ListProductsWithTag(ctx *gin.Context) {
@@ -84,7 +84,7 @@ func (server *Server) ListProductsWithTag(ctx *gin.Context) {
 		return
 	}
 	fmt.Println("Tag ID ", req.TagID)
-	products, err := server.store.ListProductsByTagID(ctx, int64(req.TagID))
+	products, err := server.store.ListProductsByTagID(ctx, req.TagID)
 	if err != nil {
 		log.Error().
 			Err(err).

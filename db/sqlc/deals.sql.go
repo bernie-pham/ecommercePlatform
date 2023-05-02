@@ -25,12 +25,12 @@ RETURNING id, name, code, start_date, end_date, type, discount_rate, merchant_id
 `
 
 type CreateDealParams struct {
-	Name         string        `json:"name"`
-	StartDate    time.Time     `json:"start_date"`
-	EndDate      time.Time     `json:"end_date"`
-	Type         string        `json:"type"`
-	DiscountRate float32       `json:"discount_rate"`
-	DealLimit    sql.NullInt32 `json:"deal_limit"`
+	Name         string          `json:"name"`
+	StartDate    time.Time       `json:"start_date"`
+	EndDate      time.Time       `json:"end_date"`
+	Type         string          `json:"type"`
+	DiscountRate float32         `json:"discount_rate"`
+	DealLimit    sql.NullFloat64 `json:"deal_limit"`
 }
 
 func (q *Queries) CreateDeal(ctx context.Context, arg CreateDealParams) (Deal, error) {
@@ -42,6 +42,36 @@ func (q *Queries) CreateDeal(ctx context.Context, arg CreateDealParams) (Deal, e
 		arg.DiscountRate,
 		arg.DealLimit,
 	)
+	var i Deal
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Code,
+		&i.StartDate,
+		&i.EndDate,
+		&i.Type,
+		&i.DiscountRate,
+		&i.MerchantID,
+		&i.DealLimit,
+	)
+	return i, err
+}
+
+const getDealByCode = `-- name: GetDealByCode :one
+SELECT id, name, code, start_date, end_date, type, discount_rate, merchant_id, deal_limit
+FROM deals
+WHERE code = $1 AND 
+    type = $2 AND
+    start_date <= now() AND now() <= end_date
+`
+
+type GetDealByCodeParams struct {
+	Code string `json:"code"`
+	Type string `json:"type"`
+}
+
+func (q *Queries) GetDealByCode(ctx context.Context, arg GetDealByCodeParams) (Deal, error) {
+	row := q.db.QueryRowContext(ctx, getDealByCode, arg.Code, arg.Type)
 	var i Deal
 	err := row.Scan(
 		&i.ID,

@@ -15,6 +15,8 @@ import (
 	"github.com/bernie-pham/ecommercePlatform/session"
 	"github.com/bernie-pham/ecommercePlatform/token"
 	ultils "github.com/bernie-pham/ecommercePlatform/ultil"
+	"github.com/elastic/go-elasticsearch/v8"
+
 	"github.com/hibiken/asynq"
 	_ "github.com/lib/pq"
 	"github.com/redis/go-redis/v9"
@@ -45,6 +47,19 @@ func main() {
 	// 	w.Write([]byte("Welcome to Ecommerce Platform"))
 	// }))
 
+	// Init Elastic Client
+	// elasticClient, err := elasticsearch.NewClient(elasticsearch.Config{
+	// 	Addresses: []string{config.ElasticAddr},
+	// })
+	elasticClient, err := elasticsearch.NewClient(elasticsearch.Config{
+		Addresses: []string{config.ElasticAddr},
+	})
+	if err != nil {
+		log.Fatal().
+			Err(err).
+			Msg("failed to connect to Elastic")
+	}
+
 	// Connect to database
 	conn, err := sql.Open(config.DBDriverName, config.DBSource)
 	if err != nil {
@@ -69,12 +84,15 @@ func main() {
 	redisOpt := asynq.RedisClientOpt{
 		Addr: config.RedisAddr,
 	}
-	// Init Asynq
-	taskDistributor := async.NewRedisTaskDistributor(redisOpt)
-	mailClient := newMailClient()
+
 	// Create new db store
 	store := db.NewStore(conn)
-	go runTaskProccessor(redisOpt, store, mailClient, config.MailSender)
+
+	// Init Asynq
+	taskDistributor := async.NewRedisTaskDistributor(redisOpt, store)
+	mailClient := newMailClient()
+
+	go runTaskProccessor(redisOpt, store, mailClient, config.MailSender, *elasticClient)
 	go runGinServer(config, store, token_maker, taskDistributor)
 	runGRPCServer(config, store, taskDistributor, token_maker, sessionRepo)
 }
@@ -133,6 +151,7 @@ func runGinServer(
 			Err(err).
 			Msgf("Cannot Listen Server on %s", config.HTTPServerAddr)
 	}
+
 }
 
 func runTaskProccessor(
@@ -140,8 +159,9 @@ func runTaskProccessor(
 	store db.Store,
 	mailClient *mail.SMTPClient,
 	sender string,
+	elasticClient elasticsearch.Client,
 ) {
-	taskProccessor := async.NewRedisTaskProccessor(redisOpt, store, mailClient, sender)
+	taskProccessor := async.NewRedisTaskProccessor(redisOpt, store, mailClient, sender, elasticClient)
 	log.Info().Msg("Start task processor")
 	err := taskProccessor.Start()
 	if err != nil {

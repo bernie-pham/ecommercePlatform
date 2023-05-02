@@ -11,12 +11,12 @@ import (
 )
 
 type CreateProductEntryParam struct {
-	ProductID int `json:"pro_id" binding:"required"`
-	ColourID  int `json:"colour_id"`
-	SizeID    int `json:"size_id"`
-	GeneralID int `json:"general_id"`
-	Quantity  int `json:"quantity" binding:"required,min=1"`
-	DealID    int `json:"deal_id"`
+	ProductID string `json:"pro_id" binding:"required"`
+	ColourID  int    `json:"colour_id"`
+	SizeID    int    `json:"size_id"`
+	GeneralID int    `json:"general_id"`
+	Quantity  int    `json:"quantity" binding:"required,min=1"`
+	DealID    int    `json:"deal_id"`
 }
 
 func (server *Server) CreateProductEntry(ctx *gin.Context) {
@@ -31,7 +31,7 @@ func (server *Server) CreateProductEntry(ctx *gin.Context) {
 	dealID, isDealID := getOptionalInt(req.DealID)
 
 	arg := db.CreatePEntryParams{
-		ProductID: int64(req.ProductID),
+		ProductID: req.ProductID,
 		ColourID: sql.NullInt64{
 			Int64: int64(colourID),
 			Valid: isColorID,
@@ -107,7 +107,7 @@ func (server *Server) UpdateProductEntry(ctx *gin.Context) {
 }
 
 type ListProductEntriesReq struct {
-	ID int `uri:"id" binding:"required"`
+	ID string `uri:"id" binding:"required"`
 }
 
 // ListProductEntries take uri parameter GET /product/:id
@@ -118,7 +118,7 @@ func (server *Server) ListProductEntries(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
-	entries, err := server.store.ListPEntriesByPID(ctx, int64(req.ID))
+	entries, err := server.store.ListPEntriesByPID(ctx, req.ID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			ctx.JSON(http.StatusOK, nil)

@@ -40,6 +40,43 @@ func (q *Queries) AddCartItem(ctx context.Context, arg AddCartItemParams) (CartI
 	return i, err
 }
 
+const addDupCartItem = `-- name: AddDupCartItem :one
+UPDATE cart_item
+SET
+    quantity = quantity + $1,
+    modified_at = $2
+WHERE 
+    id = $3 AND
+    user_id = $4
+RETURNING id, product_entry_id, quantity, created_at, user_id, modified_at
+`
+
+type AddDupCartItemParams struct {
+	Quantity   int32     `json:"quantity"`
+	ModifiedAt time.Time `json:"modified_at"`
+	ID         int64     `json:"id"`
+	UserID     int64     `json:"user_id"`
+}
+
+func (q *Queries) AddDupCartItem(ctx context.Context, arg AddDupCartItemParams) (CartItem, error) {
+	row := q.db.QueryRowContext(ctx, addDupCartItem,
+		arg.Quantity,
+		arg.ModifiedAt,
+		arg.ID,
+		arg.UserID,
+	)
+	var i CartItem
+	err := row.Scan(
+		&i.ID,
+		&i.ProductEntryID,
+		&i.Quantity,
+		&i.CreatedAt,
+		&i.UserID,
+		&i.ModifiedAt,
+	)
+	return i, err
+}
+
 const deleteAllCartItemByUserID = `-- name: DeleteAllCartItemByUserID :exec
 DELETE FROM cart_item
 WHERE user_id = $1
@@ -52,11 +89,16 @@ func (q *Queries) DeleteAllCartItemByUserID(ctx context.Context, userID int64) e
 
 const deleteCartItemByID = `-- name: DeleteCartItemByID :exec
 DELETE FROM cart_item
-WHERE id = $1
+WHERE id = $1 AND user_id = $2
 `
 
-func (q *Queries) DeleteCartItemByID(ctx context.Context, id int64) error {
-	_, err := q.db.ExecContext(ctx, deleteCartItemByID, id)
+type DeleteCartItemByIDParams struct {
+	ID     int64 `json:"id"`
+	UserID int64 `json:"user_id"`
+}
+
+func (q *Queries) DeleteCartItemByID(ctx context.Context, arg DeleteCartItemByIDParams) error {
+	_, err := q.db.ExecContext(ctx, deleteCartItemByID, arg.ID, arg.UserID)
 	return err
 }
 
@@ -106,11 +148,25 @@ LEFT JOIN products p ON pde.product_id = p.id
 WHERE c.id = $1
 `
 
-func (q *Queries) GetMerchantByCartID(ctx context.Context, id int64) (sql.NullInt32, error) {
+func (q *Queries) GetMerchantByCartID(ctx context.Context, id int64) (sql.NullInt64, error) {
 	row := q.db.QueryRowContext(ctx, getMerchantByCartID, id)
-	var merchant_id sql.NullInt32
+	var merchant_id sql.NullInt64
 	err := row.Scan(&merchant_id)
 	return merchant_id, err
+}
+
+const getPEQtyByID = `-- name: GetPEQtyByID :one
+SELECT pde.quantity
+FROM cart_item c
+LEFT JOIN product_entry pde ON c.product_entry_id = pde.id 
+WHERE c.id = $1
+`
+
+func (q *Queries) GetPEQtyByID(ctx context.Context, id int64) (sql.NullInt32, error) {
+	row := q.db.QueryRowContext(ctx, getPEQtyByID, id)
+	var quantity sql.NullInt32
+	err := row.Scan(&quantity)
+	return quantity, err
 }
 
 const listCartItemsByUserID = `-- name: ListCartItemsByUserID :many
@@ -149,32 +205,23 @@ func (q *Queries) ListCartItemsByUserID(ctx context.Context, userID int64) ([]Ca
 	return items, nil
 }
 
-const updateCartItem = `-- name: UpdateCartItem :one
+const updateCartItem = `-- name: UpdateCartItem :exec
 UPDATE cart_item
 SET
-    quantity = quantity + $1,
-    modified_at = $2
+    quantity = $1,
+    modified_at = now()
 WHERE 
-    id = $3
-RETURNING id, product_entry_id, quantity, created_at, user_id, modified_at
+    id = $2 AND
+    user_id = $3
 `
 
 type UpdateCartItemParams struct {
-	Quantity   int32     `json:"quantity"`
-	ModifiedAt time.Time `json:"modified_at"`
-	ID         int64     `json:"id"`
+	Quantity int32 `json:"quantity"`
+	ID       int64 `json:"id"`
+	UserID   int64 `json:"user_id"`
 }
 
-func (q *Queries) UpdateCartItem(ctx context.Context, arg UpdateCartItemParams) (CartItem, error) {
-	row := q.db.QueryRowContext(ctx, updateCartItem, arg.Quantity, arg.ModifiedAt, arg.ID)
-	var i CartItem
-	err := row.Scan(
-		&i.ID,
-		&i.ProductEntryID,
-		&i.Quantity,
-		&i.CreatedAt,
-		&i.UserID,
-		&i.ModifiedAt,
-	)
-	return i, err
+func (q *Queries) UpdateCartItem(ctx context.Context, arg UpdateCartItemParams) error {
+	_, err := q.db.ExecContext(ctx, updateCartItem, arg.Quantity, arg.ID, arg.UserID)
+	return err
 }

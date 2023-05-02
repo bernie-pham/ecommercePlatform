@@ -43,6 +43,16 @@ func NewServer(
 
 func (server *Server) setupRouter() {
 	router := gin.Default()
+	// router.Use(cors.New(cors.Config{
+	// 	AllowAllOrigins: true,
+	// }))
+	// Serving static file
+	public_asset_fs := gin.Dir(fmt.Sprintf("%s/public", server.config.StaticRoot), false)
+	private_asset_fs := gin.Dir(fmt.Sprintf("%s/private", server.config.StaticRoot), false)
+
+	router.Use(CORSMiddleware())
+
+	router.POST("/dev/elastic/sample", server.sampleData)
 
 	router.POST("/users", server.createUser)
 	router.PATCH("/users", server.UpdateUser)
@@ -53,20 +63,27 @@ func (server *Server) setupRouter() {
 	router.POST("/merchants", server.CreateMerchant)
 	router.PATCH("/merchants", server.UpdateMerchant)
 	router.GET("/products/tag/:id", server.ListProductsWithTag)
+	router.GET("/product", server.ListProducts)
+	router.GET("/product/:id", server.ListProductEntries)
+	router.GET("/deal", server.getOrdDeal)
 
+	// Serving public assets
+	router.StaticFS("/images", public_asset_fs)
 	authRoutes := router.Group("/").Use(authMiddleware(server.tokenMaker))
+	// Serving private assets
+	authRoutes.StaticFS("/private/images", private_asset_fs)
 
 	authRoutes.POST("/cart/add", server.AddCartItem)
 	authRoutes.GET("/cart", server.ListCartItems)
-
-	authRoutes.GET("/product/:id", server.ListProductEntries)
-	authRoutes.GET("/product", server.ListProducts)
+	authRoutes.PUT("/cart/item", server.updateCartItemQty)
+	authRoutes.DELETE("/cart/item", server.deleteCartItem)
 
 	authRoutes.POST("/order", server.CreateOrder)
 
 	authRoutes.GET("/notifications", server.ListNofications)
 
 	merchantRoutes := router.Group("/merchant")
+
 	merchantRoutes.Use(authMiddleware(server.tokenMaker))
 	merchantRoutes.Use(merchantAuthMiddleware())
 
@@ -79,6 +96,7 @@ func (server *Server) setupRouter() {
 	// authRoutes.GET("/accounts/:id", server.getAccount)
 	// authRoutes.GET("/accounts", server.listAccount)
 	// authRoutes.POST("/transfers", server.createTransfer)
+
 	server.router = router
 }
 

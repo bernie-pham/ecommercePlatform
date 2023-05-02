@@ -25,7 +25,7 @@ RETURNING id, product_id, colour_id, size_id, general_criteria_id, quantity, dea
 `
 
 type CreatePEntryParams struct {
-	ProductID         int64         `json:"product_id"`
+	ProductID         string        `json:"product_id"`
 	ColourID          sql.NullInt64 `json:"colour_id"`
 	SizeID            sql.NullInt64 `json:"size_id"`
 	GeneralCriteriaID sql.NullInt64 `json:"general_criteria_id"`
@@ -65,9 +65,9 @@ LEFT JOIN products p ON pe.product_id = p.id
 WHERE pe.id = $1
 `
 
-func (q *Queries) GetMerchantIDByPEntry(ctx context.Context, id int64) (sql.NullInt32, error) {
+func (q *Queries) GetMerchantIDByPEntry(ctx context.Context, id int64) (sql.NullInt64, error) {
 	row := q.db.QueryRowContext(ctx, getMerchantIDByPEntry, id)
-	var merchant_id sql.NullInt32
+	var merchant_id sql.NullInt64
 	err := row.Scan(&merchant_id)
 	return merchant_id, err
 }
@@ -102,7 +102,7 @@ FROM product_entry
 WHERE product_id = $1 AND is_active = true
 `
 
-func (q *Queries) ListActivePEntriesByPID(ctx context.Context, productID int64) ([]ProductEntry, error) {
+func (q *Queries) ListActivePEntriesByPID(ctx context.Context, productID string) ([]ProductEntry, error) {
 	rows, err := q.db.QueryContext(ctx, listActivePEntriesByPID, productID)
 	if err != nil {
 		return nil, err
@@ -142,7 +142,7 @@ FROM product_entry
 WHERE product_id = $1
 `
 
-func (q *Queries) ListPEntriesByPID(ctx context.Context, productID int64) ([]ProductEntry, error) {
+func (q *Queries) ListPEntriesByPID(ctx context.Context, productID string) ([]ProductEntry, error) {
 	rows, err := q.db.QueryContext(ctx, listPEntriesByPID, productID)
 	if err != nil {
 		return nil, err

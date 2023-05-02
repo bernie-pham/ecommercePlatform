@@ -74,7 +74,7 @@ func (server *Server) AddCartItem(ctx *gin.Context) {
 	}
 
 	// Get Discount if any
-	var sale float32
+	var sale float64
 	if product_entry.DealID.Valid {
 		deal, err := server.store.GetDealByID(ctx, product_entry.DealID.Int64)
 
@@ -86,9 +86,9 @@ func (server *Server) AddCartItem(ctx *gin.Context) {
 			return
 		}
 
-		sale = deal.DiscountRate * float32(todayPrice)
-		if deal.DealLimit.Valid && sale > float32(deal.DealLimit.Int32) {
-			sale = float32(deal.DealLimit.Int32)
+		sale = float64(deal.DiscountRate * todayPrice)
+		if deal.DealLimit.Valid && sale > deal.DealLimit.Float64 {
+			sale = deal.DealLimit.Float64
 		}
 	}
 
@@ -107,10 +107,11 @@ func (server *Server) AddCartItem(ctx *gin.Context) {
 	}
 	var cartItem db.CartItem
 	if cart_id != 0 {
-		cartItem, err = server.store.UpdateCartItem(ctx, db.UpdateCartItemParams{
+		cartItem, err = server.store.AddDupCartItem(ctx, db.AddDupCartItemParams{
 			ID:         cart_id,
 			ModifiedAt: time.Now(),
 			Quantity:   int32(req.Quantity),
+			UserID:     int64(authPayload.UserID),
 		})
 		if err != nil {
 			log.Error().
@@ -138,7 +139,7 @@ func (server *Server) AddCartItem(ctx *gin.Context) {
 
 	itemPrice := ItemPrice{
 		BasePrice: int(todayPrice),
-		Discount:  float64(sale),
+		Discount:  sale,
 	}
 
 	rsp := CartItem{
@@ -176,7 +177,7 @@ func (server *Server) ListCartItems(ctx *gin.Context) {
 		return
 	}
 	fmt.Println("num item on cart:", authPayload.UserID)
-	basePrices := make(map[int64]int32)
+	basePrices := make(map[string]float32)
 	dealMap := make(map[int64]db.Deal)
 	for _, item := range cartItems {
 		log.Info().Msgf("item %v", item)
@@ -193,7 +194,7 @@ func (server *Server) ListCartItems(ctx *gin.Context) {
 			newQuantity = 1
 		}
 		// Get base price
-		var todayPrice int32
+		var todayPrice float32
 		if value, ok := basePrices[product_entry.ProductID]; ok {
 			todayPrice = value
 		} else {
@@ -227,8 +228,8 @@ func (server *Server) ListCartItems(ctx *gin.Context) {
 			}
 
 			sale = deal.DiscountRate * float32(todayPrice)
-			if deal.DealLimit.Valid && sale > float32(deal.DealLimit.Int32) {
-				sale = float32(deal.DealLimit.Int32)
+			if deal.DealLimit.Valid && sale > float32(deal.DealLimit.Float64) {
+				sale = float32(deal.DealLimit.Float64)
 			}
 		}
 		price := ItemPrice{
@@ -244,4 +245,111 @@ func (server *Server) ListCartItems(ctx *gin.Context) {
 
 	}
 	ctx.JSON(http.StatusOK, items)
+}
+
+type updateCartItemQtyReq struct {
+	ID       int `json:"item_id" binding:"required"`
+	Quantity int `json:"new_qty" binding:"required"`
+}
+
+func (server *Server) updateCartItemQty(ctx *gin.Context) {
+	value, ok := ctx.Get(authorizationPayloadKey)
+	if !ok {
+		err := errors.New("invalid access token")
+		log.Error().
+			Err(err).
+			Msg("failed to get userID from access payload")
+		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
+		return
+	}
+	authPayload := value.(*token.Payload)
+
+	var req updateCartItemQtyReq
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	// verify product entry quantity is available for new cart item quantity
+	left_qty, err := server.store.GetPEQtyByID(ctx, int64(req.ID))
+	if err != nil {
+		log.Error().
+			Err(err).
+			Msg("failed to update cart item due to incorrect cart id")
+		ctx.JSON(http.StatusNotFound, errorResponse(err))
+		return
+	}
+
+	if left_qty.Int32 < int32(req.Quantity) {
+		err = errors.New("bad request paramter due to update quantity is not available for current stock")
+		log.Error().
+			Err(err).
+			Msg("failed to update cart item qty due to user's bad request")
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	err = server.store.UpdateCartItem(ctx, db.UpdateCartItemParams{
+		ID:       int64(req.ID),
+		Quantity: int32(req.Quantity),
+		UserID:   int64(authPayload.UserID),
+	})
+	if err != nil {
+		if err == sql.ErrNoRows {
+			log.Error().
+				Err(err).
+				Msg("failed to update cart item due to incorrect cart id")
+			ctx.JSON(http.StatusNotFound, errorResponse(err))
+			return
+		}
+		log.Error().
+			Err(err).
+			Msg("failed to update cart item quantity")
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+	ctx.JSON(http.StatusOK, nil)
+}
+
+type deleteCartItemReq struct {
+	ID int `json:"cart_id" binding:"required"`
+}
+
+func (server *Server) deleteCartItem(ctx *gin.Context) {
+	value, ok := ctx.Get(authorizationPayloadKey)
+	if !ok {
+		err := errors.New("invalid access token")
+		log.Error().
+			Err(err).
+			Msg("failed to get userID from access payload")
+		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
+		return
+	}
+	authPayload := value.(*token.Payload)
+	var req deleteCartItemReq
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+	err := server.store.DeleteCartItemByID(ctx, db.DeleteCartItemByIDParams{
+		ID:     int64(req.ID),
+		UserID: int64(authPayload.UserID),
+	})
+	if err != nil {
+		if err == sql.ErrNoRows {
+			log.Error().
+				Err(err).
+				Int("CartID", req.ID).
+				Msg("not found cart item")
+			ctx.JSON(http.StatusNotFound, errorResponse(err))
+			return
+		}
+		log.Error().
+			Err(err).
+			Int("CartID", req.ID).
+			Msg("failed to delete cart item")
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+	ctx.JSON(http.StatusOK, nil)
 }

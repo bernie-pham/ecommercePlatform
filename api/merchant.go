@@ -3,6 +3,7 @@ package api
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -97,7 +98,7 @@ type merchantOrderDetails struct {
 }
 
 func (server *Server) GetMerchantOrderDetails(ctx *gin.Context) {
-	session_payload, ok := ctx.Get(authorizationHeaderKey)
+	session_payload, ok := ctx.Get(authorizationPayloadKey)
 	if !ok {
 		err := errors.New("invalid access token")
 		log.Error().
@@ -106,6 +107,7 @@ func (server *Server) GetMerchantOrderDetails(ctx *gin.Context) {
 		return
 	}
 	authPayload := session_payload.(*token.Payload)
+	fmt.Println(authPayload.UserID)
 	var req getMerchantOrderRequest
 	if err := ctx.ShouldBindUri(&req); err != nil {
 		log.Error().

@@ -25,8 +25,8 @@ RETURNING id, product_id, base_price, start_date, end_date, is_active, priority
 `
 
 type CreatePPriceParams struct {
-	ProductID int64     `json:"product_id"`
-	BasePrice int32     `json:"base_price"`
+	ProductID string    `json:"product_id"`
+	BasePrice float32   `json:"base_price"`
 	StartDate time.Time `json:"start_date"`
 	EndDate   time.Time `json:"end_date"`
 	Priority  int32     `json:"priority"`
@@ -65,9 +65,9 @@ WHERE (product_id, priority) in (
 )
 `
 
-func (q *Queries) GetTodayBasePrice(ctx context.Context, productID int64) (int32, error) {
+func (q *Queries) GetTodayBasePrice(ctx context.Context, productID string) (float32, error) {
 	row := q.db.QueryRowContext(ctx, getTodayBasePrice, productID)
-	var base_price int32
+	var base_price float32
 	err := row.Scan(&base_price)
 	return base_price, err
 }
@@ -78,7 +78,7 @@ FROM product_pricing
 WHERE product_id = $1
 `
 
-func (q *Queries) ListPriceByPID(ctx context.Context, productID int64) ([]ProductPricing, error) {
+func (q *Queries) ListPriceByPID(ctx context.Context, productID string) ([]ProductPricing, error) {
 	rows, err := q.db.QueryContext(ctx, listPriceByPID, productID)
 	if err != nil {
 		return nil, err
@@ -122,11 +122,11 @@ RETURNING id, product_id, base_price, start_date, end_date, is_active, priority
 `
 
 type UpdatePPriceParams struct {
-	BasePrice sql.NullInt32 `json:"base_price"`
-	EndDate   sql.NullTime  `json:"end_date"`
-	IsActive  bool          `json:"is_active"`
-	Priority  sql.NullInt32 `json:"priority"`
-	ID        int64         `json:"id"`
+	BasePrice sql.NullFloat64 `json:"base_price"`
+	EndDate   sql.NullTime    `json:"end_date"`
+	IsActive  bool            `json:"is_active"`
+	Priority  sql.NullInt32   `json:"priority"`
+	ID        int64           `json:"id"`
 }
 
 func (q *Queries) UpdatePPrice(ctx context.Context, arg UpdatePPriceParams) (ProductPricing, error) {

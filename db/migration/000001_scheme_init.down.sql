@@ -33,3 +33,9 @@ DROP TABLE public.merchants CASCADE;
 DROP TABLE public.users CASCADE;
 
 DROP TABLE public.countries CASCADE;
+
+DROP TABLE public.merchant_order CASCADE;
+
+DROP TABLE public.notifications CASCADE;
+
+DROP TABLE public.cart_item CASCADE;

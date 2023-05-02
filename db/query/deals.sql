@@ -20,3 +20,11 @@ INSERT INTO deals (
 )
 VALUES ($1, $2, $3, $4, $5, $6)
 RETURNING *;
+
+
+-- name: GetDealByCode :one
+SELECT *
+FROM deals
+WHERE code = $1 AND 
+    type = $2 AND
+    start_date <= now() AND now() <= end_date;

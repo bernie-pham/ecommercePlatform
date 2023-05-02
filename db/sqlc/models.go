@@ -120,15 +120,15 @@ type Country struct {
 }
 
 type Deal struct {
-	ID           int64          `json:"id"`
-	Name         string         `json:"name"`
-	Code         sql.NullString `json:"code"`
-	StartDate    time.Time      `json:"start_date"`
-	EndDate      time.Time      `json:"end_date"`
-	Type         string         `json:"type"`
-	DiscountRate float32        `json:"discount_rate"`
-	MerchantID   int64          `json:"merchant_id"`
-	DealLimit    sql.NullInt32  `json:"deal_limit"`
+	ID           int64           `json:"id"`
+	Name         string          `json:"name"`
+	Code         string          `json:"code"`
+	StartDate    time.Time       `json:"start_date"`
+	EndDate      time.Time       `json:"end_date"`
+	Type         string          `json:"type"`
+	DiscountRate float32         `json:"discount_rate"`
+	MerchantID   int64           `json:"merchant_id"`
+	DealLimit    sql.NullFloat64 `json:"deal_limit"`
 }
 
 type Merchant struct {
@@ -178,11 +178,12 @@ type OrderItem struct {
 }
 
 type Product struct {
-	ID         int64             `json:"id"`
+	ID         string            `json:"id"`
 	Name       string            `json:"name"`
-	MerchantID int32             `json:"merchant_id"`
+	MerchantID int64             `json:"merchant_id"`
 	Status     NullProductStatus `json:"status"`
 	CreatedAt  time.Time         `json:"created_at"`
+	ImgPath    string            `json:"img_path"`
 }
 
 type ProductColour struct {
@@ -192,7 +193,7 @@ type ProductColour struct {
 
 type ProductEntry struct {
 	ID                int64         `json:"id"`
-	ProductID         int64         `json:"product_id"`
+	ProductID         string        `json:"product_id"`
 	ColourID          sql.NullInt64 `json:"colour_id"`
 	SizeID            sql.NullInt64 `json:"size_id"`
 	GeneralCriteriaID sql.NullInt64 `json:"general_criteria_id"`
@@ -210,8 +211,8 @@ type ProductGeneralCriterium struct {
 
 type ProductPricing struct {
 	ID        int64     `json:"id"`
-	ProductID int64     `json:"product_id"`
-	BasePrice int32     `json:"base_price"`
+	ProductID string    `json:"product_id"`
+	BasePrice float32   `json:"base_price"`
 	StartDate time.Time `json:"start_date"`
 	EndDate   time.Time `json:"end_date"`
 	IsActive  bool      `json:"is_active"`
@@ -224,24 +225,13 @@ type ProductSize struct {
 }
 
 type ProductTag struct {
-	ID   int64  `json:"id"`
+	ID   string `json:"id"`
 	Name string `json:"name"`
 }
 
 type ProductTagsProduct struct {
-	ProductTagsID int64 `json:"product_tags_id"`
-	ProductsID    int64 `json:"products_id"`
-}
-
-type Session struct {
-	ID           uuid.UUID `json:"id"`
-	Email        string    `json:"email"`
-	RefreshToken string    `json:"refresh_token"`
-	UserAgent    string    `json:"user_agent"`
-	ClientIp     string    `json:"client_ip"`
-	IsBlocked    bool      `json:"is_blocked"`
-	ExpiresAt    time.Time `json:"expires_at"`
-	CreatedAt    time.Time `json:"created_at"`
+	ProductTagsID string `json:"product_tags_id"`
+	ProductsID    string `json:"products_id"`
 }
 
 type User struct {

@@ -16,8 +16,8 @@ VALUES ($1, $2) RETURNING product_tags_id, products_id
 `
 
 type CreateProTagParams struct {
-	ProductTagsID int64 `json:"product_tags_id"`
-	ProductsID    int64 `json:"products_id"`
+	ProductTagsID string `json:"product_tags_id"`
+	ProductsID    string `json:"products_id"`
 }
 
 func (q *Queries) CreateProTag(ctx context.Context, arg CreateProTagParams) (ProductTagsProduct, error) {
@@ -46,8 +46,8 @@ WHERE product_tags_id = $1 AND products_id = $2
 `
 
 type DeleteProTagParams struct {
-	ProductTagsID int64 `json:"product_tags_id"`
-	ProductsID    int64 `json:"products_id"`
+	ProductTagsID string `json:"product_tags_id"`
+	ProductsID    string `json:"products_id"`
 }
 
 func (q *Queries) DeleteProTag(ctx context.Context, arg DeleteProTagParams) error {
@@ -60,9 +60,22 @@ DELETE FROM product_tags
 WHERE id = $1
 `
 
-func (q *Queries) DeleteTag(ctx context.Context, id int64) error {
+func (q *Queries) DeleteTag(ctx context.Context, id string) error {
 	_, err := q.db.ExecContext(ctx, deleteTag, id)
 	return err
+}
+
+const getTagNameByID = `-- name: GetTagNameByID :one
+SELECT name 
+FROM product_tags
+WHERE id = $1
+`
+
+func (q *Queries) GetTagNameByID(ctx context.Context, id string) (string, error) {
+	row := q.db.QueryRowContext(ctx, getTagNameByID, id)
+	var name string
+	err := row.Scan(&name)
+	return name, err
 }
 
 const listProTags = `-- name: ListProTags :many
@@ -93,8 +106,37 @@ func (q *Queries) ListProTags(ctx context.Context) ([]ProductTagsProduct, error)
 	return items, nil
 }
 
+const listProductIDbyTagID = `-- name: ListProductIDbyTagID :many
+SELECT products_id
+FROM product_tags_products
+WHERE product_tags_id = $1
+`
+
+func (q *Queries) ListProductIDbyTagID(ctx context.Context, productTagsID string) ([]string, error) {
+	rows, err := q.db.QueryContext(ctx, listProductIDbyTagID, productTagsID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var products_id string
+		if err := rows.Scan(&products_id); err != nil {
+			return nil, err
+		}
+		items = append(items, products_id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listProductsByTagID = `-- name: ListProductsByTagID :many
-SELECT id, name, merchant_id, status, created_at
+SELECT id, name, merchant_id, status, created_at, img_path
 FROM products
 WHERE id in (
     SELECT products_id
@@ -103,7 +145,7 @@ WHERE id in (
 )
 `
 
-func (q *Queries) ListProductsByTagID(ctx context.Context, productTagsID int64) ([]Product, error) {
+func (q *Queries) ListProductsByTagID(ctx context.Context, productTagsID string) ([]Product, error) {
 	rows, err := q.db.QueryContext(ctx, listProductsByTagID, productTagsID)
 	if err != nil {
 		return nil, err
@@ -118,10 +160,46 @@ func (q *Queries) ListProductsByTagID(ctx context.Context, productTagsID int64) 
 			&i.MerchantID,
 			&i.Status,
 			&i.CreatedAt,
+			&i.ImgPath,
 		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listTagID = `-- name: ListTagID :many
+SELECT id
+FROM product_tags
+LIMIT $1
+OFFSET $2
+`
+
+type ListTagIDParams struct {
+	Limit  int32 `json:"limit"`
+	Offset int32 `json:"offset"`
+}
+
+func (q *Queries) ListTagID(ctx context.Context, arg ListTagIDParams) ([]string, error) {
+	rows, err := q.db.QueryContext(ctx, listTagID, arg.Limit, arg.Offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
 	}
 	if err := rows.Close(); err != nil {
 		return nil, err

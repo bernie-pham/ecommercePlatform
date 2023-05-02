@@ -61,6 +61,7 @@ func (interceptor *Interceptor) authorize(ctx context.Context, method string) (c
 			break
 		}
 	}
+
 	if notfound {
 		return nil, status.Error(codes.PermissionDenied, "unauthorized method")
 	}
@@ -68,6 +69,7 @@ func (interceptor *Interceptor) authorize(ctx context.Context, method string) (c
 	newCtx := context.WithValue(ctx, token.AuthPayloadKey, auth_payload)
 	return newCtx, nil
 }
+
 func (interceptor *Interceptor) authorizeWithRedis(ctx context.Context, method string) (context.Context, error) {
 	accessLevel, ok := interceptor.accessLevels[method]
 	if !ok {
